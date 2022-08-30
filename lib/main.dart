@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:apiapp/models/user.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -35,17 +36,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  Future<List<Map<String, String>>> getUsers() async {
-    var users = <Map<String, String>>[];
+  Future<List<UserModel>> getUsers() async {
     var response = await http.get(
       Uri.parse('https://jsonplaceholder.typicode.com/users'),
     );
-    final data = jsonDecode(response.body);
-    users.clear();
-    for (var user in data) {
-      users.add({"name": user['name'], "email": user['email']});
-    }
-    return users;
+
+    final List data = jsonDecode(response.body);
+
+    return data.map((e) => UserModel.fromMap(e)).toList();
   }
 
   @override
@@ -54,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: FutureBuilder<List<Map<String, String>>>(
+      body: FutureBuilder<List<UserModel>>(
         future: getUsers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -71,8 +69,8 @@ class _MyHomePageState extends State<MyHomePage> {
             itemCount: users.length,
             itemBuilder: (_, index) => ListTile(
               leading: const Icon(Icons.person),
-              title: Text(users[index]['name']!),
-              subtitle: Text(users[index]['email']!),
+              title: Text(users[index].name),
+              subtitle: Text(users[index].email),
             ),
           );
         },
