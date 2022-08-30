@@ -15,6 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'API Integration',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -34,28 +35,17 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<Map<String, String>> users = [];
-
-  getUsers() async {
-    try {
-      var response = await http.get(
-        Uri.parse('https://jsonplaceholder.typicode.com/users'),
-      );
-      print(response.statusCode);
-      print(response.body.runtimeType);
-
-      final data = jsonDecode(response.body);
-
-      users.clear();
-
-      for (var user in data) {
-        users.add({"name": user['name'], "email": user['email']});
-      }
-
-      setState(() {});
-    } catch (e) {
-      print(e.runtimeType);
+  Future<List<Map<String, String>>> getUsers() async {
+    var users = <Map<String, String>>[];
+    var response = await http.get(
+      Uri.parse('https://jsonplaceholder.typicode.com/users'),
+    );
+    final data = jsonDecode(response.body);
+    users.clear();
+    for (var user in data) {
+      users.add({"name": user['name'], "email": user['email']});
     }
+    return users;
   }
 
   @override
@@ -64,18 +54,33 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: ListView.builder(
-        itemCount: users.length,
-        itemBuilder: (_, index) => ListTile(
-          leading: const Icon(Icons.person),
-          title: Text(users[index]['name']!),
-          subtitle: Text(users[index]['email']!),
-        ),
+      body: FutureBuilder<List<Map<String, String>>>(
+        future: getUsers(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(
+              child: Text('Something went wrong! Please, try again'),
+            );
+          }
+
+          var users = snapshot.data ?? [];
+
+          return ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (_, index) => ListTile(
+              leading: const Icon(Icons.person),
+              title: Text(users[index]['name']!),
+              subtitle: Text(users[index]['email']!),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: getUsers,
+        onPressed: () => setState(() {}),
         tooltip: 'Get Users',
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.refresh),
       ),
     );
   }
